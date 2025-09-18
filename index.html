@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="https://www.telnet.com.co/wp-content/uploads/2021/07/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TELNET ACADEMY V2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --telnet-yellow: #FFD200;
+        --telnet-yellow-dark: #F0C100;
+        --telnet-black: #212529;
+      }
+      body {
+        font-family: 'Inter', sans-serif;
+      }
+      /* Custom scrollbar styles */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      /* Light mode scrollbar */
+      ::-webkit-scrollbar-track { background: #f1f5f9; }
+      ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+      ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+      /* Dark mode scrollbar */
+      html.dark ::-webkit-scrollbar-track { background: #1e293b; }
+      html.dark ::-webkit-scrollbar-thumb { background: #475569; }
+      html.dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+      /* Styling for code blocks with highlight.js */
+      .prose pre {
+        background-color: #282c34; /* atom one dark background */
+        color: #abb2bf;
+        padding: 1em;
+        border-radius: 0.5rem;
+        font-family: 'Fira Code', 'Courier New', monospace;
+      }
+       /* Styling for blockquotes */
+      .prose blockquote, .dark .prose-invert blockquote {
+        border-left-color: var(--telnet-yellow);
+        background-color: #f8fafc;
+        padding: 1em 1.5em;
+        border-radius: 0 0.5rem 0.5rem 0;
+      }
+      .dark .prose-invert blockquote {
+        background-color: #1e293b; /* slate-900 */
+      }
+
+      /* Improved heading styles for better structure */
+      .prose h1 { font-size: 3rem; }
+      .prose h2 { font-size: 2.25rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.4em; margin-top: 2em; margin-bottom: 1em; }
+      .dark .prose-invert h2 { border-bottom-color: #475569; }
+      .prose h3 { font-size: 1.5rem; margin-top: 1.8em; margin-bottom: 0.8em; }
+      
+      .content-wrapper {
+          background-color: #0f172a; /* slate-950 */
+          padding: 2.5rem;
+          border-radius: 0.5rem;
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      }
+      /* Custom styles for 3D flashcard effect */
+      .perspective-1000 {
+        perspective: 1000px;
+      }
+      .transform-style-3d {
+        transform-style: preserve-3d;
+      }
+      .backface-hidden {
+        -webkit-backface-visibility: hidden; /* Safari */
+        backface-visibility: hidden;
+      }
+      .rotate-y-180 {
+        transform: rotateY(180deg);
+      }
+      /* Motivational pulse animation */
+      @keyframes pulse-glow {
+        0%, 100% {
+          transform: scale(1);
+          box-shadow: 0 0 5px var(--telnet-yellow), 0 0 10px var(--telnet-yellow);
+        }
+        50% {
+          transform: scale(1.02);
+          box-shadow: 0 0 15px var(--telnet-yellow), 0 0 25px var(--telnet-yellow);
+        }
+      }
+      .animate-pulse-glow {
+        animation: pulse-glow 2.5s infinite ease-in-out;
+      }
+    </style>
+  <script>
+    tailwind.config = {
+      darkMode: 'class', // Enable class-based dark mode
+      theme: {
+        extend: {
+          colors: {
+            'telnet-yellow': '#FFD200',
+            'telnet-yellow-dark': '#F0C100',
+            'telnet-yellow-light': '#FFFBEA',
+            'telnet-black': '#212529',
+            'brand-green': '#10B981',
+            'brand-red': '#EF4444',
+            'brand-orange': '#F97316',
+            'brand-gray': {
+              100: '#F8F9FA',
+              200: '#E9ECEF',
+              300: '#DEE2E6',
+              500: '#6C757D',
+              700: '#495057',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.1.0/",
+    "react": "https://esm.sh/react@^19.1.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.9.0",
+    "d3-force": "https://esm.sh/d3-force@3",
+    "recharts": "https://esm.sh/recharts@2"
+  }
+}
+</script>
+</head>
+  <body class="bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-slate-300 transition-colors duration-300">
+    <div id="root"></div>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
