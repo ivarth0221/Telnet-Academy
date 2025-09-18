@@ -191,6 +191,15 @@ const Sidebar: React.FC<SidebarProps> = ({
             const isPending = status === 'pending_review';
             const isCompleted = status === 'completed';
 
+            const totalLessonsInModule = module.lessons.length;
+            {/* FIX: The 'completedItems' property is an array. Filter it directly to count completed lessons for the module. */}
+            const completedLessonsInModule = progress.completedItems.filter(item => 
+              item.startsWith(`m${moduleIndex}_l`)
+            ).length;
+            const moduleProgressPercentage = totalLessonsInModule > 0
+              ? (completedLessonsInModule / totalLessonsInModule) * 100
+              : 0;
+
             return (
               <div key={moduleIndex} className={`bg-slate-700/50 rounded-lg ${isLocked || isPending ? 'opacity-60' : ''}`}>
                   <button onClick={() => setOpenModules(openModules.includes(moduleIndex) ? openModules.filter(i => i !== moduleIndex) : [...openModules, moduleIndex])} className="w-full flex justify-between items-center p-3 text-left">
@@ -202,7 +211,21 @@ const Sidebar: React.FC<SidebarProps> = ({
                       <ChevronDownIcon className={`w-4 h-4 transition-transform ${openModules.includes(moduleIndex) ? 'rotate-180' : ''}`} />
                   </button>
                   {openModules.includes(moduleIndex) && (
-                      <div className="p-3 border-t border-slate-700">
+                      <div className="pt-1 pb-3 px-3 border-t border-slate-700">
+                          {totalLessonsInModule > 0 && !isLocked && (
+                            <div className="mb-3 mt-2 px-0">
+                                <div className="flex justify-between items-baseline text-xs mb-1">
+                                    <span className="font-semibold text-slate-400">Progreso del Módulo</span>
+                                    <span className="font-mono text-slate-300">{completedLessonsInModule}/{totalLessonsInModule}</span>
+                                </div>
+                                <div className="w-full bg-slate-600 rounded-full h-1.5">
+                                    <div 
+                                        className="bg-telnet-yellow h-1.5 rounded-full transition-all duration-300" 
+                                        style={{ width: `${moduleProgressPercentage}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+                          )}
                           <ul className="space-y-1">
                             {module.lessons.map((lesson, lessonIndex) => {
                               const lessonKey = `m${moduleIndex}_l${lessonIndex}`;
@@ -214,6 +237,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         disabled={isLocked || isPending}
                                         className={`w-full text-left flex items-center gap-2 p-2 rounded-md transition-colors text-sm ${activeView === View.LESSON && activeModuleIndex === moduleIndex && activeLessonIndex === lessonIndex ? 'bg-telnet-yellow/20 text-telnet-yellow font-semibold' : 'text-slate-300 hover:bg-slate-700'} disabled:cursor-not-allowed disabled:hover:bg-transparent`}
                                       >
+                                          {/* FIX: The 'completedItems' property is an array, so we must use 'includes' instead of 'has'. */}
                                           {progress.completedItems.includes(`m${moduleIndex}_l${lessonIndex}`) ? <CheckCircleIcon className="w-4 h-4 text-brand-green shrink-0" /> : <BookOpenIcon className="w-4 h-4 text-slate-500 shrink-0" />}
                                           <span className="flex-grow">{lesson.lessonTitle}</span>
                                           {hasPosts && <span title="Esta lección tiene discusiones"><ChatBubbleBottomCenterTextIcon className="w-4 h-4 text-sky-400 shrink-0" /></span>}

@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
-import type { SavedCourse, Employee, CourseTemplate } from '../types';
+import type { SavedCourse, Employee, CourseTemplate, GamificationState } from '../types';
 import { TrashIcon, FireIcon, UserCircleIcon, BookOpenIcon, InformationCircleIcon, PhotoIcon, PlusCircleIcon, TrophyIcon } from './IconComponents';
 import ThemeToggle from './ThemeToggle';
+import { ALL_ACHIEVEMENTS, LEVEL_NAMES } from '../achievements';
 
 type Theme = 'light' | 'dark';
 
@@ -34,6 +35,48 @@ const ProgressBar: React.FC<{ progress: number }> = ({ progress }) => (
       </div>
     </div>
 );
+
+const getLevelTitle = (level: number) => {
+    let title = "Novato";
+    for (const threshold in LEVEL_NAMES) {
+        const numericThreshold = parseInt(threshold, 10);
+        if (level >= numericThreshold) {
+            title = LEVEL_NAMES[numericThreshold as keyof typeof LEVEL_NAMES];
+        }
+    }
+    return title;
+};
+
+const AchievementsSummaryCard: React.FC<{ gamification: GamificationState; onSelectProfile: () => void; }> = ({ gamification, onSelectProfile }) => {
+    const totalAchievements = useMemo(() => Object.keys(ALL_ACHIEVEMENTS).length, []);
+    const unlockedAchievements = gamification.achievements.length;
+    const levelTitle = getLevelTitle(gamification.level);
+
+    return (
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md border border-gray-200 dark:border-slate-700 p-6">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                <TrophyIcon className="w-6 h-6 text-telnet-yellow" />
+                Resumen de Logros
+            </h3>
+            <div className="space-y-4">
+                <div className="flex justify-between items-center bg-gray-50 dark:bg-slate-700/50 p-3 rounded-lg">
+                    <span className="font-semibold text-slate-600 dark:text-slate-300">Nivel Actual</span>
+                    <span className="font-bold text-lg text-telnet-yellow">{gamification.level} ({levelTitle})</span>
+                </div>
+                <div className="flex justify-between items-center bg-gray-50 dark:bg-slate-700/50 p-3 rounded-lg">
+                    <span className="font-semibold text-slate-600 dark:text-slate-300">Logros Desbloqueados</span>
+                    <span className="font-bold text-lg text-telnet-yellow">{unlockedAchievements} / {totalAchievements}</span>
+                </div>
+            </div>
+            <button
+                onClick={onSelectProfile}
+                className="w-full mt-6 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold py-2 px-4 rounded-md transition-colors duration-200"
+            >
+                Ver todos mis logros
+            </button>
+        </div>
+    );
+};
 
 const Leaderboard: React.FC<{ employees: Employee[]; currentEmployeeId: string }> = ({ employees, currentEmployeeId }) => {
     const sortedEmployees = useMemo(() => 
@@ -178,7 +221,8 @@ const Dashboard: React.FC<DashboardProps> = ({ employee, employees, courseTempla
                 )}
             </div>
             
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 space-y-8">
+                 <AchievementsSummaryCard gamification={employee.gamification} onSelectProfile={onSelectProfile} />
                  <Leaderboard employees={employees} currentEmployeeId={employee.id} />
             </div>
           </div>
