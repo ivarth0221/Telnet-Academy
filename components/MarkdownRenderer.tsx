@@ -2,11 +2,31 @@ import React from 'react';
 import CodeBlock from './CodeBlock';
 import { PhotoIcon } from './IconComponents';
 
+// FIX: Declare 'marked' on the window object for TypeScript
+declare global {
+  interface Window {
+    marked: any;
+  }
+}
+
 interface MarkdownRendererProps {
   content: string;
   courseContext: string;
   className?: string;
 }
+
+const sanitizeHtml = (htmlString: string): string => {
+  if (typeof htmlString !== 'string') return '';
+  // A very basic sanitizer. For a real-world app, use a library like DOMPurify.
+  let sanitized = htmlString;
+  // Remove script tags and their content
+  sanitized = sanitized.replace(/<script\b[^>]*>[\s\S]*?<\/script\b[^>]*>/gi, '');
+  // Remove on* event handler attributes
+  sanitized = sanitized.replace(/ on\w+=(['"]?)(?:(?!\1).)*\1/gi, '');
+  // Remove javascript: URLs from href attributes
+  sanitized = sanitized.replace(/ href=(['"]?)javascript:.*?(['"]?)/gi, ' href="#"');
+  return sanitized;
+};
 
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, courseContext, className = '' }) => {
   const handleSearchClick = (term: string) => {
@@ -15,6 +35,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, courseCont
   };
 
   const renderContent = () => {
+    if (!content) return null;
     const parts = content.split(/(\`\`\`[\s\S]*?\`\`\`|\[searchable\][\s\S]*?\[\/searchable\])/g);
 
     return parts.map((part, index) => {
@@ -42,9 +63,10 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, courseCont
       }
       
       // Render normal markdown text
-      const html = typeof window.marked?.parse === 'function' ? window.marked.parse(part) : part.replace(/\n/g, '<br />');
+      const rawHtml = typeof window.marked?.parse === 'function' ? window.marked.parse(part) : part.replace(/\n/g, '<br />');
+      const sanitizedHtml = sanitizeHtml(rawHtml);
       return (
-        <span key={index} dangerouslySetInnerHTML={{ __html: html }} />
+        <span key={index} dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />
       );
     });
   };

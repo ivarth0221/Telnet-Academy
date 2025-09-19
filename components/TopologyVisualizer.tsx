@@ -1,20 +1,29 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { NetworkTopology, NetworkDevice, NetworkLink } from '../types';
 import MarkdownRenderer from './MarkdownRenderer';
 import { CpuChipIcon, ServerIcon, ComputerDesktopIcon, WifiIcon, CloudIcon, FirewallIcon, PhoneIcon, PrinterIcon, ChevronDoubleRightIcon, NetworkIcon } from './IconComponents';
-import { forceSimulation, forceLink, forceManyBody, forceCenter } from 'd3-force';
+import { forceSimulation, forceLink, forceManyBody, forceCenter, SimulationNodeDatum, SimulationLinkDatum } from 'd3-force';
 
 type Position = { x: number; y: number };
 type Positions = Record<string, Position>;
 type SelectedElement = (NetworkDevice & { elementType: 'device' }) | (NetworkLink & { elementType: 'link' });
 
+// Extend d3-force types to match our data structure
+interface NodeDatum extends SimulationNodeDatum, NetworkDevice {}
+interface LinkDatum extends SimulationLinkDatum<NodeDatum> {
+    source: string; // d3-force expects source/target to be objects after initialization, but we use strings
+    target: string;
+    label?: string;
+    explanation: string;
+}
+
 const DeviceIcon: React.FC<{ type: NetworkDevice['type'], className?: string }> = ({ type, className = "w-6 h-6" }) => {
     switch (type) {
         case 'router': return <CpuChipIcon className={className} />;
-        case 'switch': return <ChevronDoubleRightIcon className={className} />; // Placeholder
+        case 'switch': return <ChevronDoubleRightIcon className={className} />;
         case 'server': return <ServerIcon className={className} />;
         case 'pc': return <ComputerDesktopIcon className={className} />;
-        case 'laptop': return <ComputerDesktopIcon className={className} />; // Placeholder
+        case 'laptop': return <ComputerDesktopIcon className={className} />;
         case 'access_point': return <WifiIcon className={className} />;
         case 'cloud': return <CloudIcon className={className} />;
         case 'firewall': return <FirewallIcon className={className} />;
@@ -23,7 +32,7 @@ const DeviceIcon: React.FC<{ type: NetworkDevice['type'], className?: string }> 
         case 'olt':
         case 'ont':
         case 'splitter':
-             return <CpuChipIcon className={className} />; // Placeholder for GPON
+             return <CpuChipIcon className={className} />;
         default:
             return <div className="w-4 h-4 rounded-full bg-gray-400" />;
     }
@@ -33,8 +42,8 @@ const DeviceIcon: React.FC<{ type: NetworkDevice['type'], className?: string }> 
 const TopologyVisualizer: React.FC<{ topology: NetworkTopology }> = ({ topology }) => {
     const [positions, setPositions] = useState<Positions>({});
     const [selectedElement, setSelectedElement] = useState<SelectedElement | null>(null);
-    const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
-    const containerRef = React.useRef<HTMLDivElement>(null);
+    const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+    const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const updateDimensions = () => {
@@ -46,35 +55,43 @@ const TopologyVisualizer: React.FC<{ topology: NetworkTopology }> = ({ topology 
             }
         };
         updateDimensions();
-        window.addEventListener('resize', updateDimensions);
-        return () => window.removeEventListener('resize', updateDimensions);
+        const resizeObserver = new ResizeObserver(updateDimensions);
+        if (containerRef.current) {
+            resizeObserver.observe(containerRef.current);
+        }
+        return () => resizeObserver.disconnect();
     }, []);
 
     useEffect(() => {
         if (topology.devices.length === 0 || dimensions.width === 0 || dimensions.height === 0) return;
 
-        const nodes: any[] = topology.devices.map(d => ({ ...d }));
-        const links = topology.links.map(l => ({ ...l }));
+        // Make mutable copies for d3
+        const nodes: NodeDatum[] = topology.devices.map(d => ({ ...d }));
+        const links: LinkDatum[] = topology.links.map(l => ({ ...l }));
 
         const simulation = forceSimulation(nodes)
             .force("link", forceLink(links).id((d: any) => d.id).distance(120).strength(0.5))
             .force("charge", forceManyBody().strength(-800))
             .force("center", forceCenter(dimensions.width / 2, dimensions.height / 2))
-            .stop();
+            .on("tick", () => {
+                // On each tick of the simulation, update the positions state
+                const newPositions: Positions = {};
+                nodes.forEach(node => {
+                    // FIX: Use a type assertion as d3 adds x/y properties at runtime.
+                    // Also check for null/undefined to handle coordinates being 0.
+                    const simNode = node as SimulationNodeDatum;
+                    if (simNode.x != null && simNode.y != null) {
+                         newPositions[node.id] = { x: simNode.x, y: simNode.y };
+                    }
+                });
+                setPositions(currentPositions => ({ ...currentPositions, ...newPositions }));
+            });
 
-        // Run simulation synchronously for a set number of iterations
-        for (let i = 0, n = Math.ceil(Math.log(simulation.alphaMin()) / Math.log(1 - simulation.alphaDecay())); i < n; ++i) {
-            simulation.tick();
-        }
-
-        const finalPositions: Positions = {};
-        nodes.forEach(node => {
-            finalPositions[node.id] = { x: node.x, y: node.y };
-        });
-        
-        setPositions(finalPositions);
-        setSelectedElement(null);
-    }, [topology, dimensions]);
+        // Cleanup: stop simulation when component unmounts or dependencies change
+        return () => {
+            simulation.stop();
+        };
+    }, [topology, dimensions.width, dimensions.height]);
     
     const linksWithPositions = useMemo(() => {
         return topology.links.map(link => {
@@ -98,7 +115,7 @@ const TopologyVisualizer: React.FC<{ topology: NetworkTopology }> = ({ topology 
 
                         {/* Render Links */}
                         {linksWithPositions.map((link, i) => (
-                            <g key={i} className="cursor-pointer group" onClick={() => setSelectedElement({ ...link, elementType: 'link' })}>
+                            <g key={`${link!.source}-${link!.target}-${i}`} className="cursor-pointer group" onClick={() => setSelectedElement({ ...link, elementType: 'link' })}>
                                 <line
                                     x1={link!.sourcePos.x} y1={link!.sourcePos.y}
                                     x2={link!.targetPos.x} y2={link!.targetPos.y}

@@ -1,16 +1,16 @@
 import React, { useState, useMemo } from 'react';
+import { useAppStore } from '../store/appStore';
 import type { GalleryItem } from '../types';
 import { ChevronLeftIcon, PhotoIcon, TagIcon } from './IconComponents';
-
-interface GalleryViewProps {
-  items: GalleryItem[];
-  onReturnToDashboard: () => void;
-}
 
 type Category = GalleryItem['category'] | 'Todos';
 const categories: Category[] = ['Todos', 'Conectores', 'Tipos de Fibra', 'Herramientas'];
 
-const GalleryView: React.FC<GalleryViewProps> = ({ items, onReturnToDashboard }) => {
+const GalleryView: React.FC = () => {
+    const { items, returnToDashboard } = useAppStore(state => ({
+        items: state.appState.galleryItems,
+        returnToDashboard: state.returnToDashboard,
+    }));
     const [activeCategory, setActiveCategory] = useState<Category>('Todos');
 
     const filteredItems = useMemo(() => {
@@ -24,7 +24,7 @@ const GalleryView: React.FC<GalleryViewProps> = ({ items, onReturnToDashboard })
         <div className="min-h-screen bg-slate-900 text-white p-4 sm:p-8">
             <div className="max-w-7xl mx-auto">
                 <div className="mb-8">
-                    <button onClick={onReturnToDashboard} className="flex items-center gap-2 text-slate-400 hover:text-telnet-yellow transition-colors font-semibold">
+                    <button onClick={returnToDashboard} className="flex items-center gap-2 text-slate-400 hover:text-telnet-yellow transition-colors font-semibold">
                         <ChevronLeftIcon className="w-5 h-5" />
                         Volver al Panel
                     </button>

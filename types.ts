@@ -276,7 +276,7 @@ export interface SavedCourse {
         status: 'not_started' | 'in_progress' | 'pending_review' | 'completed';
         moduleStatus: Record<string, 'locked' | 'in_progress' | 'pending_review' | 'completed'>; // Key: m0, m1, ...
         moduleStartDates: Record<string, string>; // Key: m0, m1... stores ISO date string
-        completedItems: string[];
+        completedItems: Set<string>;
         finalProjectEvaluation?: FinalProjectEvaluation;
         projectSubmission?: ProjectSubmission;
         flashcards: Flashcard[];

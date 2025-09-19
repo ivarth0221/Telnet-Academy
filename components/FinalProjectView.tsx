@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAppStore } from '../store/appStore';
+import { View } from '../types';
 import type { FinalProject, Progress, FinalProjectEvaluation, ProjectSubmission } from '../types';
 import MarkdownRenderer from './MarkdownRenderer';
 import { SparklesIcon, TrophyIcon, ClockIcon, PhotoIcon, ArrowUpTrayIcon, XCircleIcon } from './IconComponents';
@@ -17,19 +19,44 @@ const CompetencyMeter: React.FC<{ label: string, score: number, feedback: string
     </div>
 );
 
-interface FinalProjectViewProps {
-  project: FinalProject;
-  progress: Progress;
-  onSubmitProject: (submission: ProjectSubmission) => void;
-  courseContext: string;
-}
+const FinalProjectView: React.FC = () => {
+    const { activeCourse, submitProject, returnToDashboard, selectView } = useAppStore(state => ({
+      activeCourse: state.getters.activeCourse(),
+      submitProject: state.submitProject,
+      returnToDashboard: state.returnToDashboard,
+      selectView: state.selectView,
+    }));
 
-const FinalProjectView: React.FC<FinalProjectViewProps> = ({ project, progress, onSubmitProject, courseContext }) => {
+    useEffect(() => {
+        if (!activeCourse) {
+            returnToDashboard();
+        }
+    }, [activeCourse, returnToDashboard]);
+
     const [submissionText, setSubmissionText] = useState('');
     const [submissionImage, setSubmissionImage] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    if (!activeCourse) {
+        return null;
+    }
+
+    const { course, progress } = activeCourse;
+    const project = course.finalProject;
+
+    if (!project) {
+        useEffect(() => {
+            selectView(View.EXAM);
+        }, [selectView]);
+        return (
+             <div className="p-4 md:p-8 flex-grow h-full overflow-y-auto bg-slate-900 flex flex-col items-center justify-center text-center">
+                <LoadingSpinner message="Esta ruta no tiene proyecto. Redireccionando al examen final..." />
+            </div>
+        );
+    }
+    const courseContext = course.title;
+    
     const isSubmitted = progress.completedItems.has('final_project_submitted');
     const existingEvaluation = progress.finalProjectEvaluation;
 
@@ -54,7 +81,7 @@ const FinalProjectView: React.FC<FinalProjectViewProps> = ({ project, progress, 
         setIsSubmitting(true);
         setError(null);
         try {
-            onSubmitProject({ text: submissionText, imageUrl: submissionImage || undefined });
+            await submitProject({ text: submissionText, imageUrl: submissionImage || undefined });
         } catch (err) {
             setError(err instanceof Error ? err.message : "Ocurrió un error al entregar el proyecto.");
         } finally {

@@ -3,6 +3,13 @@ import type { ForumPost, Employee } from '../types';
 import { XCircleIcon, SparklesIcon, PaperAirplaneIcon, ChatBubbleBottomCenterTextIcon } from './IconComponents';
 import LoadingSpinner from './LoadingSpinner';
 
+// FIX: Declare 'marked' on the window object for TypeScript
+declare global {
+  interface Window {
+    marked: any;
+  }
+}
+
 interface DiscussionPanelViewProps {
   isOpen: boolean;
   onClose: () => void;
@@ -152,7 +159,7 @@ const DiscussionPanelView: React.FC<DiscussionPanelViewProps> = ({
                     {summaryState.summary && (
                         <div className="mt-4 p-3 bg-slate-900/50 rounded-lg text-sm text-slate-300">
                            <h4 className="font-bold mb-2">Resumen de la Discusión:</h4>
-                           <div className="prose prose-sm prose-invert" dangerouslySetInnerHTML={{ __html: window.marked.parse(summaryState.summary) }}/>
+                           <div className="prose prose-sm prose-invert" dangerouslySetInnerHTML={{ __html: window.marked?.parse(summaryState.summary) }}/>
                         </div>
                     )}
                     {summaryState.error && <p className="text-red-400 text-xs mt-2 text-center">{summaryState.error}</p>}

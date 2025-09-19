@@ -1,19 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useAppStore } from '../store/appStore';
 import type { TutorMessage } from '../types';
 import { PaperAirplaneIcon, SparklesIcon, MagnifyingGlassIcon } from './IconComponents';
 import MarkdownRenderer from './MarkdownRenderer';
-
-interface TutorViewProps {
-  history: TutorMessage[];
-  topic: string;
-  onSendMessage: (message: string) => void;
-}
 
 const BlinkingCursor = () => (
     <span className="inline-block w-2.5 h-5 bg-telnet-yellow animate-pulse ml-1" style={{ animationDuration: '1s' }}></span>
 );
 
-const TutorView: React.FC<TutorViewProps> = ({ history, topic, onSendMessage }) => {
+const TutorView: React.FC = () => {
+    const { history, topic, sendMessage } = useAppStore(state => {
+        const activeCourse = state.getters.activeCourse();
+        return {
+            history: activeCourse?.progress.tutorHistory?.['global'] || [],
+            topic: activeCourse?.course.title ?? 'Asesoramiento General',
+            sendMessage: state.sendMessageToTutor,
+        }
+    });
+
   const [input, setInput] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -26,7 +30,7 @@ const TutorView: React.FC<TutorViewProps> = ({ history, topic, onSendMessage }) 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isThinking) return;
-    onSendMessage(input);
+    sendMessage(input);
     setInput('');
   };
 

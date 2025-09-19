@@ -1,8 +1,14 @@
-
 import React, { useState, useEffect } from 'react';
-import { simulateCommandExecution } from '../services/geminiService';
+import { geminiService } from '../services/geminiService';
 import { ClipboardDocumentIcon, PlayCircleIcon, CheckCircleIcon } from './IconComponents';
 import LoadingSpinner from './LoadingSpinner';
+
+// FIX: Declare 'hljs' on the window object for TypeScript
+declare global {
+    interface Window {
+        hljs: any;
+    }
+}
 
 interface CodeBlockProps {
   code: string;
@@ -16,8 +22,8 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ code, language, courseContext }) 
   const [simulationResult, setSimulationResult] = useState<string | null>(null);
 
   useEffect(() => {
-    window.hljs.highlightAll();
-  }, [code, language]);
+    window.hljs?.highlightAll();
+  }, [code, language, simulationResult]);
   
   const handleCopy = () => {
     navigator.clipboard.writeText(code);
@@ -29,7 +35,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ code, language, courseContext }) 
     setIsLoading(true);
     setSimulationResult(null);
     try {
-        const result = await simulateCommandExecution(code, courseContext);
+        const result = await geminiService.simulateCommandExecution(code, courseContext);
         setSimulationResult(result);
     } catch(e) {
         setSimulationResult("Error al simular el comando.");

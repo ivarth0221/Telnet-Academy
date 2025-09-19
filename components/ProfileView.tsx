@@ -1,13 +1,8 @@
 import React from 'react';
+import { useAppStore } from '../store/appStore';
 import type { GamificationState, Achievement } from '../types';
 import { ALL_ACHIEVEMENTS, XP_FOR_LEVEL, LEVEL_NAMES } from '../achievements';
 import { ChevronLeftIcon } from './IconComponents';
-
-interface ProfileViewProps {
-  gamification: GamificationState;
-  userName: string | null;
-  onReturnToDashboard: () => void;
-}
 
 const getLevelTitle = (level: number) => {
     let title = "Novato";
@@ -31,7 +26,17 @@ const Badge: React.FC<{ ach: Achievement, isUnlocked: boolean }> = ({ ach, isUnl
     );
 }
 
-const ProfileView: React.FC<ProfileViewProps> = ({ gamification, userName, onReturnToDashboard }) => {
+const ProfileView: React.FC = () => {
+    const { activeEmployee, returnToDashboard } = useAppStore(state => ({
+        activeEmployee: state.getters.activeEmployee(),
+        returnToDashboard: state.returnToDashboard,
+    }));
+
+    if (!activeEmployee) {
+        return null; // Render nothing if employee is not available yet
+    }
+
+    const { name: userName, gamification } = activeEmployee;
     const { xp, level, achievements } = gamification;
 
     const currentLevelXP = XP_FOR_LEVEL(level -1);
@@ -44,7 +49,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ gamification, userName, onRet
         <div className="min-h-screen bg-slate-900 text-white p-4 sm:p-8">
             <div className="max-w-5xl mx-auto">
                 <div className="mb-8">
-                    <button onClick={onReturnToDashboard} className="flex items-center gap-2 text-slate-400 hover:text-telnet-yellow transition-colors font-semibold">
+                    <button onClick={returnToDashboard} className="flex items-center gap-2 text-slate-400 hover:text-telnet-yellow transition-colors font-semibold">
                         <ChevronLeftIcon className="w-5 h-5" />
                         Volver al Panel
                     </button>

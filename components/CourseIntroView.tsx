@@ -1,11 +1,6 @@
 import React from 'react';
-import type { Course } from '../types';
+import { useAppStore } from '../store/appStore';
 import { BookOpenIcon, DocumentQuestionIcon, TrophyIcon, AcademicCapIcon, SparklesIcon, BrainCircuitIcon } from './IconComponents';
-
-interface CourseIntroViewProps {
-  course: Course;
-  onStart: () => void;
-}
 
 const StepCard: React.FC<{ icon: React.FC<any>, title: string, description: string }> = ({ icon: Icon, title, description }) => (
     <div className="bg-slate-800/50 p-6 rounded-lg text-left flex items-start gap-4">
@@ -17,7 +12,16 @@ const StepCard: React.FC<{ icon: React.FC<any>, title: string, description: stri
     </div>
 );
 
-const CourseIntroView: React.FC<CourseIntroViewProps> = ({ course, onStart }) => {
+const CourseIntroView: React.FC = () => {
+    const { course, startCourse } = useAppStore(state => ({
+        course: state.getters.activeCourse()?.course,
+        startCourse: state.startCourse,
+    }));
+
+    if (!course) {
+        return <div>Cargando curso...</div>; // Or a more sophisticated loading state
+    }
+
   return (
     <div className="p-4 md:p-8 flex-grow h-full overflow-y-auto bg-slate-900 flex items-center justify-center">
       <div className="max-w-4xl w-full text-center">
@@ -55,7 +59,7 @@ const CourseIntroView: React.FC<CourseIntroViewProps> = ({ course, onStart }) =>
         </div>
 
         <button
-            onClick={onStart}
+            onClick={startCourse}
             className="bg-telnet-yellow hover:bg-telnet-yellow-dark text-telnet-black font-bold py-4 px-10 rounded-lg text-lg transition-transform transform hover:scale-105 shadow-lg shadow-telnet-yellow/30"
         >
             ¡Entendido, comencemos!

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { SparklesIcon, ChatBubbleBottomCenterTextIcon, WrenchScrewdriverIcon, LightBulbIcon } from './IconComponents';
-import { generateClarifyingQuestions } from '../services/geminiService';
+import { geminiService } from '../services/geminiService';
 import LoadingSpinner from './LoadingSpinner';
 import type { ClarifyingQuestionWithOptions } from '../types';
 
@@ -31,7 +31,7 @@ const roleOptions = [
         description: 'Primer punto de contacto. Resuelve problemas básicos y registra casos en Splynx.'
     },
     {
-        title: 'Auxiliar NOC (Soporte Nivel 2)',
+        title: 'Auxiliar NOC (Sorte Nivel 2)',
         description: 'Diagnostica y resuelve problemas de red de forma remota usando OLT Cloud.'
     },
     {
@@ -64,6 +64,12 @@ const focusOptions = [
     { title: 'Fundamentos Teóricos', description: 'Explicaciones claras de conceptos clave y mejores prácticas.' }
 ];
 
+// Helper for basic security validation to prevent simple script injections.
+const isPotentiallyMalicious = (input: string): boolean => {
+  const maliciousPattern = /<script|on\w+=/i;
+  return maliciousPattern.test(input);
+};
+
 const TopicInput: React.FC<TopicInputProps> = ({ onTopicSubmit, isLoading, onCancel }) => {
   const [step, setStep] = useState<'initial' | 'role' | 'depth' | 'tone' | 'focus' | 'clarifying'>('initial');
   const [initialTopic, setInitialTopic] = useState('');
@@ -78,16 +84,22 @@ const TopicInput: React.FC<TopicInputProps> = ({ onTopicSubmit, isLoading, onCan
   
    const handleInitialSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError(''); // Refactor: Clear previous errors
-    if (initialTopic.trim() === '') {
+    setError('');
+    const topic = initialTopic.trim();
+    if (topic === '') {
       setError('Por favor, describe la habilidad.');
+      return;
+    }
+    // Basic security validation to prevent obvious XSS attempts
+    if (isPotentiallyMalicious(topic)) {
+      setError('La descripción contiene caracteres no permitidos. Por favor, revisa tu entrada.');
       return;
     }
     setStep('role');
   };
   
   const handleRoleSubmit = () => {
-    setError(''); // Refactor: Clear previous errors
+    setError('');
     if (role.trim() === '') {
         setError('Debes seleccionar un rol.');
         return;
@@ -96,12 +108,12 @@ const TopicInput: React.FC<TopicInputProps> = ({ onTopicSubmit, isLoading, onCan
   };
   
   const handleDepthSubmit = () => {
-    setError(''); // Refactor: Add for consistency
+    setError('');
     setStep('tone');
   };
 
   const handleToneSubmit = () => {
-    setError(''); // Refactor: Clear previous errors
+    setError('');
     if(!tone) {
         setError('Debes seleccionar un tono.');
         return;
@@ -110,7 +122,7 @@ const TopicInput: React.FC<TopicInputProps> = ({ onTopicSubmit, isLoading, onCan
   };
 
   const handleFocusSubmit = async () => {
-    setError(''); // Refactor: Clear previous errors
+    setError('');
     if(!focus) {
         setError('Debes seleccionar un enfoque.');
         return;
@@ -118,7 +130,7 @@ const TopicInput: React.FC<TopicInputProps> = ({ onTopicSubmit, isLoading, onCan
     setStep('clarifying');
     setIsLoadingQuestions(true);
     try {
-      const generatedQuestions = await generateClarifyingQuestions({ topic: initialTopic, role, depth, tone, focus });
+      const generatedQuestions = await geminiService.generateClarifyingQuestions({ topic: initialTopic, role, depth, tone, focus });
       setQuestions(generatedQuestions);
       setAnswers(new Array(generatedQuestions.length).fill(''));
     } catch (err) {
@@ -145,7 +157,7 @@ const TopicInput: React.FC<TopicInputProps> = ({ onTopicSubmit, isLoading, onCan
   };
   
   const goBack = () => {
-    setError(''); // Clear any validation errors when moving back a step.
+    setError('');
     if (step === 'clarifying') setStep('focus');
     else if (step === 'focus') setStep('tone');
     else if (step === 'tone') setStep('depth');
@@ -307,7 +319,6 @@ const TopicInput: React.FC<TopicInputProps> = ({ onTopicSubmit, isLoading, onCan
         )
   );
 
-  // FIX: Added the main return block to render the current step and handle loading/error states.
   const renderCurrentStep = () => {
     switch (step) {
       case 'initial': return renderInitialStep();
@@ -352,5 +363,4 @@ const TopicInput: React.FC<TopicInputProps> = ({ onTopicSubmit, isLoading, onCan
   );
 };
 
-// FIX: Added the missing default export.
 export default TopicInput;

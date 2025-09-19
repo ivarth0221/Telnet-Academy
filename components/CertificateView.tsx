@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useAppStore } from '../store/appStore';
 import type { Course, Progress, CertificateData } from '../types';
-import { generateCertificateData } from '../services/geminiService';
+import { geminiService } from '../services/geminiService';
 import { ArrowDownTrayIcon, ShareIcon } from './IconComponents';
 import LoadingSpinner from './LoadingSpinner';
 
-interface CertificateViewProps {
-  course: Course;
-  progress: Progress;
-  userName: string | null;
-  onUpdateUserName: (name: string) => void;
+declare global {
+    interface Window {
+        jspdf: any;
+    }
 }
 
 const TELNET_LOGO_URL = 'https://i.imgur.com/rDAq1J8.png'; // White logo on transparent bg
@@ -33,13 +33,31 @@ const toBase64 = (url: string): Promise<string> => {
 };
 
 
-const CertificateView: React.FC<CertificateViewProps> = ({ course, progress, userName, onUpdateUserName }) => {
-    const [nameInput, setNameInput] = useState(userName || '');
-    const [isEditingName, setIsEditingName] = useState(!userName);
+const CertificateView: React.FC = () => {
+    const { activeCourse, activeEmployee, updateEmployeeState, returnToDashboard } = useAppStore(state => ({
+        activeCourse: state.getters.activeCourse(),
+        activeEmployee: state.getters.activeEmployee(),
+        updateEmployeeState: state.updateEmployeeState,
+        returnToDashboard: state.returnToDashboard,
+    }));
+    
+    const [nameInput, setNameInput] = useState(activeEmployee?.name || '');
+    const [isEditingName, setIsEditingName] = useState(!activeEmployee?.name);
     const [data, setData] = useState<CertificateData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [logoBase64, setLogoBase64] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!activeCourse || !activeEmployee) {
+            returnToDashboard();
+        }
+    }, [activeCourse, activeEmployee, returnToDashboard]);
+
+    const onUpdateUserName = (name: string) => {
+        if (!activeEmployee) return;
+        updateEmployeeState(activeEmployee.id, (emp) => ({ ...emp, name }));
+    };
 
     useEffect(() => {
         toBase64(TELNET_LOGO_URL)
@@ -49,16 +67,22 @@ const CertificateView: React.FC<CertificateViewProps> = ({ course, progress, use
                 setError("No se pudo cargar el logo para el certificado.");
             });
 
-        if (userName) {
+        if (activeEmployee?.name && activeCourse) {
             setIsLoading(true);
-            generateCertificateData(course, userName)
+            geminiService.generateCertificateData(activeCourse.course, activeEmployee.name)
                 .then(setData)
                 .catch(err => setError(err.message || "No se pudo generar la información del certificado."))
                 .finally(() => setIsLoading(false));
         } else {
             setIsLoading(false);
         }
-    }, [course, userName]);
+    }, [activeCourse, activeEmployee?.name]);
+
+    if (!activeCourse || !activeEmployee) {
+        return null; // Render nothing while redirecting
+    }
+    const { course } = activeCourse;
+    const { name: userName } = activeEmployee;
     
     const handleNameSubmit = (e: React.FormEvent) => {
         e.preventDefault();

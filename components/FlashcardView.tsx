@@ -1,29 +1,33 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useAppStore } from '../store/appStore';
 import type { Course, Flashcard } from '../types';
-import { generateFlashcardsForCourse } from '../services/geminiService';
+import { geminiService } from '../services/geminiService';
 import LoadingSpinner from './LoadingSpinner';
 import MarkdownRenderer from './MarkdownRenderer';
 import { ArrowPathIcon, ChevronLeftIcon, ChevronRightIcon } from './IconComponents';
 
-interface FlashcardViewProps {
-  course: Course;
-  flashcards: Flashcard[];
-  onStoreFlashcards: (flashcards: Flashcard[]) => void;
-}
+export const FlashcardView: React.FC = () => {
+    const { course, flashcards, storeFlashcards } = useAppStore(state => {
+        const activeCourse = state.getters.activeCourse();
+        return {
+            course: activeCourse?.course,
+            flashcards: activeCourse?.progress.flashcards ?? [],
+            storeFlashcards: state.storeFlashcards,
+        }
+    });
 
-export const FlashcardView: React.FC<FlashcardViewProps> = ({ course, flashcards, onStoreFlashcards }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
 
-  useEffect(() => {
-    if (flashcards.length === 0) {
+  const generateFlashcards = () => {
+      if (!course) return;
       setIsLoading(true);
       setError(null);
-      generateFlashcardsForCourse(course)
+      geminiService.generateFlashcardsForCourse(course)
         .then(newFlashcards => {
-          onStoreFlashcards(newFlashcards);
+          storeFlashcards(newFlashcards);
         })
         .catch(err => {
           setError(err.message || 'Error desconocido al generar flashcards.');
@@ -31,8 +35,13 @@ export const FlashcardView: React.FC<FlashcardViewProps> = ({ course, flashcards
         .finally(() => {
           setIsLoading(false);
         });
+  }
+
+  useEffect(() => {
+    if (flashcards.length === 0) {
+      generateFlashcards();
     }
-  }, [course, flashcards, onStoreFlashcards]);
+  }, [course]); 
 
   useEffect(() => {
     // Reset flip state when card changes
@@ -40,29 +49,27 @@ export const FlashcardView: React.FC<FlashcardViewProps> = ({ course, flashcards
   }, [currentCardIndex]);
 
   const goToNextCard = () => {
+    if (flashcards.length === 0) return;
     setCurrentCardIndex(prev => (prev + 1) % flashcards.length);
   };
 
   const goToPrevCard = () => {
+    if (flashcards.length === 0) return;
     setCurrentCardIndex(prev => (prev - 1 + flashcards.length) % flashcards.length);
   };
   
   const handleRetry = () => {
-     if (flashcards.length === 0) {
-      setIsLoading(true);
-      setError(null);
-      generateFlashcardsForCourse(course)
-        .then(newFlashcards => {
-          onStoreFlashcards(newFlashcards);
-        })
-        .catch(err => {
-          setError(err.message || 'Error desconocido al generar flashcards.');
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
-    }
+     generateFlashcards();
   };
+
+  if (!course) {
+    return (
+      <div className="flex-grow flex flex-col items-center justify-center p-6 text-center bg-slate-950">
+        <h2 className="text-2xl text-slate-300 font-bold">Error</h2>
+        <p className="text-slate-400 mt-2">No se pudo cargar la información del curso.</p>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

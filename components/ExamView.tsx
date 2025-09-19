@@ -1,21 +1,32 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useAppStore } from '../store/appStore';
 import type { TutorMessage, FinalExamState } from '../types';
 import { PaperAirplaneIcon, SparklesIcon, AcademicCapIcon, CheckCircleIcon, XCircleIcon, BookOpenIcon } from './IconComponents';
 import MarkdownRenderer from './MarkdownRenderer';
 import LoadingSpinner from './LoadingSpinner';
 
-interface ExamViewProps {
-  examState: FinalExamState;
-  onSendMessage: (message: string) => void;
-  onResetCycle: () => void;
-  courseContext: string;
-}
-
 const BlinkingCursor = () => (
     <span className="inline-block w-2.5 h-5 bg-telnet-yellow animate-pulse ml-1" style={{ animationDuration: '1s' }}></span>
 );
 
-const ExamView: React.FC<ExamViewProps> = ({ examState, onSendMessage, onResetCycle, courseContext }) => {
+const ExamView: React.FC = () => {
+    const { 
+        examState, 
+        courseContext, 
+        sendExamMessage, 
+        resetExamCycle 
+    } = useAppStore(state => {
+        const activeCourse = state.getters.activeCourse();
+        // FIX: Provide a default value that conforms to the FinalExamState type to avoid type errors.
+        const defaultExamState: FinalExamState = { status: 'not_started', attemptsLeft: 3, history: [] };
+        return {
+            examState: activeCourse?.progress.finalExamState ?? defaultExamState,
+            courseContext: activeCourse?.course.title ?? '',
+            sendExamMessage: state.sendExamMessage,
+            resetExamCycle: state.resetExamCycle,
+        }
+    });
+    
   const [input, setInput] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
   
@@ -28,7 +39,7 @@ const ExamView: React.FC<ExamViewProps> = ({ examState, onSendMessage, onResetCy
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isThinking || examState.status !== 'in_progress') return;
-    onSendMessage(input);
+    sendExamMessage(input);
     setInput('');
   };
 
@@ -68,7 +79,7 @@ const ExamView: React.FC<ExamViewProps> = ({ examState, onSendMessage, onResetCy
                     {examState.remediationPlan ? <MarkdownRenderer content={examState.remediationPlan} courseContext={courseContext} /> : <LoadingSpinner message="Generando plan..."/> }
                 </div>
                  <button 
-                    onClick={onResetCycle} 
+                    onClick={resetExamCycle} 
                     disabled={!examState.remediationPlan}
                     className="mt-6 bg-telnet-yellow hover:bg-telnet-yellow-dark text-telnet-black font-bold py-2 px-6 rounded-lg transition-colors disabled:opacity-50"
                 >
